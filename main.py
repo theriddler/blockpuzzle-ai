@@ -84,13 +84,12 @@ def draw_current_block(mousePos, currentBlock):
     xStart = mouseX - (mouseX%BLOCK_SIZE)
     yStart = mouseY - (mouseY%BLOCK_SIZE)
 
-    for y in range(0,2):
-        for x in range(0,2):
+    for yIdx in range(0,3):
+        for xIdx in range(0,3):
             occupied = currentBlock[yIdx][xIdx]
             print(occupied)
             if(occupied == 1):
-              pygame.draw.rect(screen, WHITE, (xStart-BLOCK_SIZE, y, BLOCK_SIZE, BLOCK_SIZE))
-
+              pygame.draw.rect(screen, WHITE, ((xStart+((xIdx-1)*BLOCK_SIZE)), (yStart+((yIdx-1)*BLOCK_SIZE)), BLOCK_SIZE, BLOCK_SIZE))
 
 # pygame setup
 pygame.init()
@@ -98,8 +97,7 @@ screen = pygame.display.set_mode((BLOCK_SIZE*BLOCK_IN_X, BLOCK_SIZE*BLOCK_IN_Y))
 clock = pygame.time.Clock()
 running = True
 
-currentBlock = DOUBLE_RIGHT
-print(currentBlock)
+currentBlock = BIG_L_BOTTOM_LEFT
 
 while running:
   
@@ -107,6 +105,10 @@ while running:
   for event in pygame.event.get():
       if event.type == pygame.QUIT:
           running = False
+        
+      if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_SPACE:
+          currentBlock = choose_block()
 
   # set our background
   screen.fill(BLACK)
