@@ -2,18 +2,6 @@
 import pygame
 import random
 
-# colors
-WHITE = (255,255,255)
-BLACK = (0,0,0)
-
-# consts
-BLOCK_SIZE = 60
-BLOCKS_IN_WIDTH = 10
-BLOCKS_IN_HEIGHT = 10
-
-PIXEL_WIDTH = BLOCK_SIZE * BLOCKS_IN_WIDTH
-PIXEL_HEIGHT = BLOCK_SIZE * BLOCKS_IN_HEIGHT
-
 # block types
 # read left to right, top to bottom
 SINGLE = [
@@ -75,87 +63,127 @@ blocks = [
     BIG_L_BOTTOM_RIGHT
 ]
 
-# instantiate a board for us to keep track
-board = [[0 for x in range(BLOCKS_IN_WIDTH)] for y in range(BLOCKS_IN_HEIGHT)]
-
 def choose_block():
   return random.choice(blocks)
+
+# colors
+WHITE = (255,255,255)
+BLACK = (0,0,0)
+
+# consts
+BLOCK_SIZE = 60
+BLOCKS_IN_WIDTH = 10
+BLOCKS_IN_HEIGHT = 10
+
+PIXEL_WIDTH = BLOCK_SIZE * BLOCKS_IN_WIDTH
+PIXEL_HEIGHT = BLOCK_SIZE * BLOCKS_IN_HEIGHT
+
+# instantiate a board for us to keep track
+board = [[0 for x in range(BLOCKS_IN_WIDTH)] for y in range(BLOCKS_IN_HEIGHT)]
 
 def draw_board():
   # grid
   for x in range(0, PIXEL_HEIGHT, BLOCK_SIZE):
-      pygame.draw.line(screen, WHITE, (x, 0), (x, PIXEL_HEIGHT))
+      pygame.draw.line(screen, BLACK, (x, 0), (x, PIXEL_HEIGHT))
   for y in range(0, PIXEL_WIDTH, BLOCK_SIZE):
-      pygame.draw.line(screen, WHITE, (0, y), (PIXEL_WIDTH, y))
+      pygame.draw.line(screen, BLACK, (0, y), (PIXEL_WIDTH, y))
     
   # already placed pieces
   for xIdx in range(0, BLOCKS_IN_WIDTH):
     for yIdx in range(0, BLOCKS_IN_WIDTH):
        if(board[yIdx][xIdx] == 1):
-          pygame.draw.rect(screen, WHITE, ((xIdx*BLOCK_SIZE), (yIdx*BLOCK_SIZE), BLOCK_SIZE, BLOCK_SIZE))
+          xStart = (xIdx*BLOCK_SIZE)
+          yStart = (yIdx*BLOCK_SIZE)
+          pygame.draw.rect(screen, BLACK, (xStart, yStart, BLOCK_SIZE, BLOCK_SIZE))
 
-def mousepos_to_block_top_left(mousePos):
+
+def mousepos_to_board_indexes(mousePos):
   (mouseX,mouseY) = mousePos
 
   # get to the root of the block (top left)
-  x = mouseX - (mouseX%BLOCK_SIZE)
-  y = mouseY - (mouseY%BLOCK_SIZE)
+  x = (mouseX - (mouseX%BLOCK_SIZE)) / BLOCK_SIZE
+  y = (mouseY - (mouseY%BLOCK_SIZE)) / BLOCK_SIZE
 
-  return (x, y)
+  return (int(x), int(y))
 
-def can_set_current_block(mousePos, currentBlock):
-  (x, y) = mousepos_to_block_top_left(mousePos)
 
-  lowerXLimit = 0
-  upperXLimit = -1
-  lowerYLimit = 0
-  upperYLimit = -1
-  
-  for idx in range(0,3):
-    if(currentBlock[idx][0] == 1):
-      lowerXLimit = BLOCK_SIZE
-    
-    if(currentBlock[idx][2] == 1):
-      upperXLimit = BLOCK_SIZE
-
-    if(currentBlock[0][idx] == 1):
-      lowerYLimit = BLOCK_SIZE
-    
-    if(currentBlock[2][idx] == 1):
-      upperYLimit = BLOCK_SIZE
-  
-
-  if(x < lowerXLimit or x > PIXEL_WIDTH-upperXLimit-1):
-     return False
-
-  if(y < lowerYLimit or y > PIXEL_HEIGHT-upperYLimit-1):
-     return False
+def draw_current_block(mousePos, currentBlock):
+  (x, y) = mousepos_to_board_indexes(mousePos)
 
   for yIdx in range(0,3):
       for xIdx in range(0,3):
           if(currentBlock[yIdx][xIdx] == 1):
-            if(board[int(y/BLOCK_SIZE)+(yIdx-1)][int(x/BLOCK_SIZE)+(xIdx-1)] == 1):
+            xStart = ((x+xIdx-1)*BLOCK_SIZE)
+            yStart = ((y+yIdx-1)*BLOCK_SIZE)
+            pygame.draw.rect(screen, BLACK, (xStart, yStart, BLOCK_SIZE, BLOCK_SIZE))
+
+
+def can_set_current_block(mousePos, currentBlock):
+  (x, y) = mousepos_to_board_indexes(mousePos)
+
+  lowerXLimit = 0
+  upperXLimit = 0
+  lowerYLimit = 0
+  upperYLimit = 0
+  
+  for idx in range(0,3):
+    if(currentBlock[idx][0] == 1):
+      lowerXLimit = 1
+    
+    if(currentBlock[idx][2] == 1):
+      upperXLimit = 1
+
+    if(currentBlock[0][idx] == 1):
+      lowerYLimit = 1
+    
+    if(currentBlock[2][idx] == 1):
+      upperYLimit = 1
+  
+
+  if(x < lowerXLimit or x > BLOCKS_IN_WIDTH-upperXLimit-1):
+     return False
+
+  if(y < lowerYLimit or y > BLOCKS_IN_HEIGHT-upperYLimit-1):
+     return False
+  
+  for yIdx in range(0,3):
+      for xIdx in range(0,3):
+          if(currentBlock[yIdx][xIdx] == 1):
+            if(board[y+yIdx-1][x+xIdx-1] == 1):
               return False
   
   return True
 
+
 def set_current_block(mousePos, currentBlock):
-  (x, y) = mousepos_to_block_top_left(mousePos)
+  (x, y) = mousepos_to_board_indexes(mousePos)
 
   for yIdx in range(0,3):
       for xIdx in range(0,3):
           if(currentBlock[yIdx][xIdx] == 1):
-            board[int(y/BLOCK_SIZE)+(yIdx-1)][int(x/BLOCK_SIZE)+(xIdx-1)] = 1
+            board[y+yIdx-1][x+xIdx-1] = 1
 
-def draw_current_block(mousePos, currentBlock):
-  (x, y) = mousepos_to_block_top_left(mousePos)
+def clear_rows_cols():
+  for x in range(0,BLOCKS_IN_WIDTH):
+    for y in range(0,BLOCKS_IN_HEIGHT):
+       if(board[y][x] != 1):
+          break
+       
+       if(y == BLOCKS_IN_HEIGHT-1):
+          for yToClear in range(0,BLOCKS_IN_HEIGHT):
+             board[yToClear][x] = 0
+          
+       
+  for y in range(0,BLOCKS_IN_HEIGHT):
+    for x in range(0,BLOCKS_IN_WIDTH):
+       if(board[y][x] != 1):
+          break
+       
+       if(x == BLOCKS_IN_WIDTH-1):
+          for xToClear in range(0,BLOCKS_IN_HEIGHT):
+             board[y][xToClear] = 0
 
-  if(can_set_current_block(mousePos, currentBlock)):
-    for yIdx in range(0,3):
-        for xIdx in range(0,3):
-            if(currentBlock[yIdx][xIdx] == 1):
-              pygame.draw.rect(screen, WHITE, ((x+((xIdx-1)*BLOCK_SIZE)), (y+((yIdx-1)*BLOCK_SIZE)), BLOCK_SIZE, BLOCK_SIZE))
-
+  return False
 
 # pygame setup
 pygame.init()
@@ -182,8 +210,9 @@ while running:
           currentBlock = choose_block()
 
   # set our board as per current state
-  screen.fill(BLACK)
+  screen.fill(WHITE)
   draw_board()
+  clear_rows_cols()
 
   # draw current rect
   if(canSetBlock):
