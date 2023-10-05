@@ -34,6 +34,12 @@ DOUBLE_RIGHT = [
   [0,0,0]
 ]
 
+SQUARE = [
+  [0,0,0],
+  [1,1,0],
+  [1,1,0]
+]
+
 BIG_L_TOP_LEFT = [
   [1,1,1],
   [1,0,0],
@@ -62,6 +68,7 @@ blocks = [
     SINGLE,
     DOUBLE_LEFT,
     DOUBLE_RIGHT,
+    SQUARE,
     BIG_L_TOP_LEFT,
     BIG_L_TOP_RIGHT,
     BIG_L_BOTTOM_LEFT,
@@ -96,15 +103,41 @@ def mousepos_to_block_top_left(mousePos):
 
   return (x, y)
 
-
-def draw_current_block(mousePos, currentBlock):
+def can_set_current_block(mousePos, currentBlock):
   (x, y) = mousepos_to_block_top_left(mousePos)
+
+  lowerXLimit = 0
+  upperXLimit = -1
+  lowerYLimit = 0
+  upperYLimit = -1
+  
+  for idx in range(0,3):
+    if(currentBlock[idx][0] == 1):
+      lowerXLimit = BLOCK_SIZE
+    
+    if(currentBlock[idx][2] == 1):
+      upperXLimit = BLOCK_SIZE
+
+    if(currentBlock[0][idx] == 1):
+      lowerYLimit = BLOCK_SIZE
+    
+    if(currentBlock[2][idx] == 1):
+      upperYLimit = BLOCK_SIZE
+  
+
+  if(x < lowerXLimit or x > PIXEL_WIDTH-upperXLimit-1):
+     return False
+
+  if(y < lowerYLimit or y > PIXEL_HEIGHT-upperYLimit-1):
+     return False
 
   for yIdx in range(0,3):
       for xIdx in range(0,3):
           if(currentBlock[yIdx][xIdx] == 1):
-            pygame.draw.rect(screen, WHITE, ((x+((xIdx-1)*BLOCK_SIZE)), (y+((yIdx-1)*BLOCK_SIZE)), BLOCK_SIZE, BLOCK_SIZE))
-
+            if(board[int(y/BLOCK_SIZE)+(yIdx-1)][int(x/BLOCK_SIZE)+(xIdx-1)] == 1):
+              return False
+  
+  return True
 
 def set_current_block(mousePos, currentBlock):
   (x, y) = mousepos_to_block_top_left(mousePos)
@@ -113,20 +146,30 @@ def set_current_block(mousePos, currentBlock):
       for xIdx in range(0,3):
           if(currentBlock[yIdx][xIdx] == 1):
             board[int(y/BLOCK_SIZE)+(yIdx-1)][int(x/BLOCK_SIZE)+(xIdx-1)] = 1
-   
-  print(board)
 
+def draw_current_block(mousePos, currentBlock):
+  (x, y) = mousepos_to_block_top_left(mousePos)
+
+  if(can_set_current_block(mousePos, currentBlock)):
+    for yIdx in range(0,3):
+        for xIdx in range(0,3):
+            if(currentBlock[yIdx][xIdx] == 1):
+              pygame.draw.rect(screen, WHITE, ((x+((xIdx-1)*BLOCK_SIZE)), (y+((yIdx-1)*BLOCK_SIZE)), BLOCK_SIZE, BLOCK_SIZE))
 
 
 # pygame setup
 pygame.init()
 screen = pygame.display.set_mode((BLOCK_SIZE*BLOCKS_IN_WIDTH, BLOCK_SIZE*BLOCKS_IN_HEIGHT))
 clock = pygame.time.Clock()
+
 running = True
+currentBlock = choose_block()
 
-currentBlock = BIG_L_BOTTOM_LEFT
-
+# main loop
 while running:
+
+  mousePos = pygame.mouse.get_pos()
+  canSetBlock = can_set_current_block(mousePos, currentBlock)
   
   # pygame.QUIT event means the user clicked X to close your window
   for event in pygame.event.get():
@@ -134,14 +177,17 @@ while running:
           running = False
         
       if event.type == pygame.MOUSEBUTTONUP:
-        set_current_block(pygame.mouse.get_pos(), currentBlock)
+        if(canSetBlock):
+          set_current_block(mousePos, currentBlock)
+          currentBlock = choose_block()
 
-  # set our background
+  # set our board as per current state
   screen.fill(BLACK)
   draw_board()
 
   # draw current rect
-  draw_current_block(pygame.mouse.get_pos(), currentBlock)
+  if(canSetBlock):
+    draw_current_block(mousePos, currentBlock)
 
   # no idea why we need this
   pygame.display.flip()
